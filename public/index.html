@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Order Tool</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Vendor Order Tool</h1>
+    <nav>
+      <button data-tab="vendors" class="tab active">Vendors</button>
+      <button data-tab="order" class="tab">New Order</button>
+      <button data-tab="compare" class="tab">Compare</button>
+      <button data-tab="history" class="tab">History</button>
+    </nav>
+    <span class="local-note">local only &middot; data stays on this machine</span>
+  </header>
+
+  <main>
+    <section id="tab-vendors" class="panel"></section>
+    <section id="tab-order" class="panel hidden"></section>
+    <section id="tab-compare" class="panel hidden"></section>
+    <section id="tab-history" class="panel hidden"></section>
+  </main>
+
+  <div id="modal-root"></div>
+  <div id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
