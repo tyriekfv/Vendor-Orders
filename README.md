@@ -136,17 +136,59 @@ Apply, then open `http://YOUR-UNRAID-IP:4321`. The database and OCR cache
 live in `/mnt/user/appdata/vendor-orders`, so they survive container
 updates and rebuilds — back that folder up and you've backed up everything.
 
-Alternatively, if you use the *Docker Compose Manager* plugin, point it at
-the included `docker-compose.yml` instead of steps above.
+### 2b. Or use the Docker Compose Manager plugin instead
+
+The Compose Manager plugin stores each stack's folder on `/boot` (the USB
+flash drive), which is the wrong place to build a Node app — so keep the
+source and data on the array and point the build there.
+
+**Put the source on the array** (not in `/tmp`, so it survives reboots):
+
+```bash
+mkdir -p /mnt/user/appdata/vendor-orders/app /mnt/user/appdata/vendor-orders/data
+cd /mnt/user/appdata/vendor-orders/app
+curl -L -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.github.com/repos/tyriekfv/Vendor-Orders/tarball/main \
+  | tar xz --strip-components=1
+```
+
+Then **Compose → ADD NEW STACK**, name it `vendor-orders`, and paste this as
+its `docker-compose.yml` (edit the stack, "Compose File" / pencil icon):
+
+```yaml
+services:
+  vendor-orders:
+    build: /mnt/user/appdata/vendor-orders/app   # absolute path — the flash-drive stack folder has no source
+    image: vendor-orders
+    container_name: vendor-orders
+    ports:
+      - "4321:4321"
+    volumes:
+      - /mnt/user/appdata/vendor-orders/data:/app/data
+    environment:
+      - APP_PASSWORD=change-me                    # required if exposed via tunnel; delete to run open on LAN
+    restart: unless-stopped
+```
+
+Click **COMPOSE UP**. Open `http://YOUR-UNRAID-IP:4321`.
 
 ### 3. Updating later
 
+Refresh the source, then rebuild the image:
+
 ```bash
-cd /tmp/vendor-orders-src   # re-download the tarball as in step 1 if it's gone
-docker build -t vendor-orders .
+cd /mnt/user/appdata/vendor-orders/app
+curl -L -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.github.com/repos/tyriekfv/Vendor-Orders/tarball/main \
+  | tar xz --strip-components=1
+docker compose -f /boot/config/plugins/compose.manager/projects/vendor-orders/docker-compose.yml build --no-cache
 ```
 
-then restart the container from the Docker tab.
+then **COMPOSE DOWN** and **COMPOSE UP** on the stack. (Plain "Update Stack"
+only pulls published images; because this stack builds locally you must
+rebuild after changing the source.) If you added the container the manual
+way in step 2 instead, just re-run `docker build -t vendor-orders .` in the
+source folder and restart the container from the Docker tab.
 
 > **Note on exposure:** in Docker the app binds `0.0.0.0` (set via the
 > `HOST` env var) so your LAN can reach it. By default there is no login —
