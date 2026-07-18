@@ -149,9 +149,27 @@ docker build -t vendor-orders .
 then restart the container from the Docker tab.
 
 > **Note on exposure:** in Docker the app binds `0.0.0.0` (set via the
-> `HOST` env var) so your LAN can reach it, and it has no login. Keep the
-> port un-forwarded on your router; anyone on your network who can reach
-> the Unraid box can use the app.
+> `HOST` env var) so your LAN can reach it. By default there is no login —
+> anyone on your network who can reach the Unraid box can use the app. Set
+> the `APP_PASSWORD` variable (below) if that isn't acceptable.
+
+## Remote access (Cloudflare tunnel, reverse proxy)
+
+If you expose the app beyond your LAN — e.g. with a Cloudflare tunnel
+pointed at `http://UNRAID-IP:4321` — layer BOTH of these on:
+
+1. **Cloudflare Access** (Zero Trust → Access → Applications → Self-hosted):
+   put an Access policy (email one-time-PIN or SSO) in front of the tunnel
+   hostname. Without it, the tunnel URL is open to the entire internet.
+   Access is free for up to 50 users.
+2. **App password**: set the `APP_PASSWORD` environment variable on the
+   container (Unraid template → Add Variable → key `APP_PASSWORD`). The app
+   then requires HTTP Basic auth (any username, that password) on every
+   request — a second layer in case the tunnel or Access is ever
+   misconfigured.
+
+Only ever expose the `https://` hostname Cloudflare gives you; never
+port-forward 4321 directly on your router.
 
 ## Backup / moving machines
 

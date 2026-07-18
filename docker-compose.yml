@@ -6,6 +6,10 @@ services:
     container_name: vendor-orders
     ports:
       - "4321:4321"
+    # environment:
+    #   # Require a password (HTTP Basic auth). Strongly recommended if the app
+    #   # is reachable beyond your LAN, e.g. via a Cloudflare tunnel.
+    #   - APP_PASSWORD=change-me
     volumes:
       # Unraid convention — change the left side on other systems.
       - /mnt/user/appdata/vendor-orders:/app/data

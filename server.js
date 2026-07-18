@@ -12,6 +12,26 @@ const { buildQuote } = require('./lib/pricing');
 
 const PORT = process.env.PORT || 4321;
 const app = express();
+
+// Optional password gate: set APP_PASSWORD to require HTTP Basic auth on
+// everything (any username). Essential if the app is reachable beyond
+// localhost — e.g. through a reverse proxy or Cloudflare tunnel.
+const APP_PASSWORD = process.env.APP_PASSWORD;
+if (APP_PASSWORD) {
+  const crypto = require('node:crypto');
+  const expected = crypto.createHash('sha256').update(APP_PASSWORD).digest();
+  app.use((req, res, next) => {
+    const [scheme, cred] = String(req.headers.authorization || '').split(' ');
+    if (scheme === 'Basic' && cred) {
+      const pass = Buffer.from(cred, 'base64').toString().split(':').slice(1).join(':');
+      const given = crypto.createHash('sha256').update(pass).digest();
+      if (crypto.timingSafeEqual(given, expected)) return next();
+    }
+    res.set('WWW-Authenticate', 'Basic realm="Vendor Orders", charset="UTF-8"');
+    res.status(401).send('Authentication required');
+  });
+}
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
