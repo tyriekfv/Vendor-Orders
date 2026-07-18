@@ -278,7 +278,10 @@ app.delete('/api/orders/:id', asyncRoute((req, res) => {
   res.json({ ok: true });
 }));
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`Vendor Order Tool running at http://localhost:${PORT}`);
+// Default bind is localhost-only. Set HOST=0.0.0.0 (as the Docker image does)
+// to serve other devices — the app has no login, so only do that on a trusted LAN.
+const HOST = process.env.HOST || '127.0.0.1';
+app.listen(PORT, HOST, () => {
+  console.log(`Vendor Order Tool running at http://${HOST === '0.0.0.0' ? '<this-machine>' : 'localhost'}:${PORT}`);
   console.log('All data is stored locally in ./data/orders.db');
 });

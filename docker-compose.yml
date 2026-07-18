@@ -1,0 +1,12 @@
+# For Unraid's "Docker Compose Manager" plugin, or any docker-compose host.
+services:
+  vendor-orders:
+    build: .
+    image: vendor-orders
+    container_name: vendor-orders
+    ports:
+      - "4321:4321"
+    volumes:
+      # Unraid convention — change the left side on other systems.
+      - /mnt/user/appdata/vendor-orders:/app/data
+    restart: unless-stopped

@@ -97,6 +97,62 @@ Every saved order keeps a full snapshot (it survives later price changes or
 vendor deletion). **Details** shows the itemization, **Re-run** reloads the
 lines into New Order at *current* prices, **✕** deletes it.
 
+## Run on Unraid (Docker)
+
+The repo includes a `Dockerfile`. Since this repository is private there is
+no public image to pull, so you build it once on the Unraid box, then add it
+as a normal container.
+
+### 1. Get the source onto the server and build
+
+Open the Unraid web terminal (top-right `>_` icon) or SSH in. Because the
+repo is private you need a GitHub personal access token (github.com →
+Settings → Developer settings → Fine-grained tokens → this repo, contents:
+read-only). Then:
+
+```bash
+mkdir -p /tmp/vendor-orders-src && cd /tmp/vendor-orders-src
+curl -L -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.github.com/repos/tyriekfv/Vendor-Orders/tarball/main \
+  | tar xz --strip-components=1
+docker build -t vendor-orders .
+```
+
+(If you ever make the repo public, the token header can be dropped.)
+
+### 2. Add the container in the Unraid UI
+
+Docker tab → **Add Container** → switch the template toggle to *Advanced view*:
+
+| Field | Value |
+|---|---|
+| Name | `vendor-orders` |
+| Repository | `vendor-orders` (the local image you just built) |
+| Network type | `bridge` |
+| Port | container `4321` → host `4321` (or any free host port) |
+| Path | container `/app/data` → host `/mnt/user/appdata/vendor-orders` |
+
+Apply, then open `http://YOUR-UNRAID-IP:4321`. The database and OCR cache
+live in `/mnt/user/appdata/vendor-orders`, so they survive container
+updates and rebuilds — back that folder up and you've backed up everything.
+
+Alternatively, if you use the *Docker Compose Manager* plugin, point it at
+the included `docker-compose.yml` instead of steps above.
+
+### 3. Updating later
+
+```bash
+cd /tmp/vendor-orders-src   # re-download the tarball as in step 1 if it's gone
+docker build -t vendor-orders .
+```
+
+then restart the container from the Docker tab.
+
+> **Note on exposure:** in Docker the app binds `0.0.0.0` (set via the
+> `HOST` env var) so your LAN can reach it, and it has no login. Keep the
+> port un-forwarded on your router; anyone on your network who can reach
+> the Unraid box can use the app.
+
 ## Backup / moving machines
 
 Copy the `data/` folder. That's the entire state.
@@ -104,6 +160,7 @@ Copy the `data/` folder. That's the entire state.
 ## Configuration
 
 - `PORT=5000 npm start` to use a different port.
-- The server intentionally binds to `127.0.0.1`. If you want to reach it
-  from another device on your network, change the `app.listen` host in
-  `server.js` — but understand that removes the localhost-only protection.
+- The server binds to `127.0.0.1` by default (localhost only). To reach it
+  from other devices on your network, start it with `HOST=0.0.0.0` — the
+  Docker image does this for you. There is no login, so only do that on a
+  network you trust.
